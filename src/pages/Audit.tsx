@@ -27,11 +27,10 @@ import {
   Alert,
   Button,
 } from '@mui/material';
-import {
-  Visibility as ViewIcon,
-  Close as CloseIcon,
-  AdminPanelSettings as ShieldIcon,
-} from '@mui/icons-material';
+import ViewIcon from '@mui/icons-material/Visibility';
+import CloseIcon from '@mui/icons-material/Close';
+import ShieldIcon from '@mui/icons-material/AdminPanelSettings';
+
 
 export const Audit: React.FC = () => {
   const { user } = useAuth();

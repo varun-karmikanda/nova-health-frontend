@@ -19,21 +19,20 @@ import {
   useTheme,
   Tooltip,
 } from '@mui/material';
-import {
-  Menu as MenuIcon,
-  ChevronLeft as ChevronLeftIcon,
-  Dashboard as DashboardIcon,
-  People as PeopleIcon,
-  CalendarMonth as CalendarIcon,
-  HistoryEdu as EncounterIcon,
-  ReceiptLong as InvoiceIcon,
-  History as AuditIcon,
-  DarkMode as DarkModeIcon,
-  LightMode as LightModeIcon,
-  Logout as LogoutIcon,
-  LocalHospital,
-  Badge as BadgeIcon,
-} from '@mui/icons-material';
+import MenuIcon from '@mui/icons-material/Menu';
+import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
+import DashboardIcon from '@mui/icons-material/Dashboard';
+import PeopleIcon from '@mui/icons-material/People';
+import CalendarIcon from '@mui/icons-material/CalendarMonth';
+import EncounterIcon from '@mui/icons-material/HistoryEdu';
+import InvoiceIcon from '@mui/icons-material/ReceiptLong';
+import AuditIcon from '@mui/icons-material/History';
+import DarkModeIcon from '@mui/icons-material/DarkMode';
+import LightModeIcon from '@mui/icons-material/LightMode';
+import LogoutIcon from '@mui/icons-material/Logout';
+import LocalHospital from '@mui/icons-material/LocalHospital';
+import BadgeIcon from '@mui/icons-material/Badge';
+
 
 const drawerWidth = 260;
 

@@ -28,14 +28,13 @@ import {
   Alert,
   Divider,
 } from '@mui/material';
-import {
-  Add as AddIcon,
-  Visibility as ViewIcon,
-  Close as CloseIcon,
-  AssignmentTurnedIn as SignIcon,
-  LocalPharmacy as PharmacyIcon,
-  DeleteOutlineOutlined as RemoveIcon,
-} from '@mui/icons-material';
+import AddIcon from '@mui/icons-material/Add';
+import ViewIcon from '@mui/icons-material/Visibility';
+import CloseIcon from '@mui/icons-material/Close';
+import SignIcon from '@mui/icons-material/AssignmentTurnedIn';
+import PharmacyIcon from '@mui/icons-material/LocalPharmacy';
+import RemoveIcon from '@mui/icons-material/DeleteOutlineOutlined';
+
 
 export const Encounters: React.FC = () => {
   const { user } = useAuth();
