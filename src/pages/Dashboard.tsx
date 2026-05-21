@@ -16,12 +16,11 @@ import {
   CircularProgress,
   Avatar,
 } from '@mui/material';
-import {
-  PeopleAlt as PatientsIcon,
-  EventNote as CalendarIcon,
-  AttachMoney as RevenueIcon,
-  Speed as WorkloadIcon,
-} from '@mui/icons-material';
+import PatientsIcon from '@mui/icons-material/PeopleAlt';
+import CalendarIcon from '@mui/icons-material/EventNote';
+import RevenueIcon from '@mui/icons-material/AttachMoney';
+import WorkloadIcon from '@mui/icons-material/Speed';
+
 import {
   AreaChart,
   Area,

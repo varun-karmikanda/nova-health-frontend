@@ -13,7 +13,10 @@ import {
   Alert,
   CircularProgress,
 } from '@mui/material';
-import { Visibility, VisibilityOff, LocalHospital } from '@mui/icons-material';
+import Visibility from '@mui/icons-material/Visibility';
+import VisibilityOff from '@mui/icons-material/VisibilityOff';
+import LocalHospital from '@mui/icons-material/LocalHospital';
+
 
 export const Login: React.FC = () => {
   const { login } = useAuth();

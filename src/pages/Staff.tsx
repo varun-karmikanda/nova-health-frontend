@@ -30,12 +30,11 @@ import {
   Button,
   Tooltip,
 } from '@mui/material';
-import {
-  Add as AddIcon,
-  Delete as DeleteIcon,
-  Close as CloseIcon,
-  AdminPanelSettings as ShieldIcon,
-} from '@mui/icons-material';
+import AddIcon from '@mui/icons-material/Add';
+import DeleteIcon from '@mui/icons-material/Delete';
+import CloseIcon from '@mui/icons-material/Close';
+import ShieldIcon from '@mui/icons-material/AdminPanelSettings';
+
 
 export const Staff: React.FC = () => {
   const { user, registerUser } = useAuth();

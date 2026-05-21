@@ -31,18 +31,17 @@ import {
   Alert,
   Divider,
 } from '@mui/material';
-import {
-  Add as AddIcon,
-  Search as SearchIcon,
-  Visibility as ViewIcon,
-  Edit as EditIcon,
-  Delete as DeleteIcon,
-  Close as CloseIcon,
-  ContactPhone as ContactIcon,
-  HistoryEdu as EncounterIcon,
-  ReceiptLong as InvoiceIcon,
-  History as AuditIcon,
-} from '@mui/icons-material';
+import AddIcon from '@mui/icons-material/Add';
+import SearchIcon from '@mui/icons-material/Search';
+import ViewIcon from '@mui/icons-material/Visibility';
+import EditIcon from '@mui/icons-material/Edit';
+import DeleteIcon from '@mui/icons-material/Delete';
+import CloseIcon from '@mui/icons-material/Close';
+import ContactIcon from '@mui/icons-material/ContactPhone';
+import EncounterIcon from '@mui/icons-material/HistoryEdu';
+import InvoiceIcon from '@mui/icons-material/ReceiptLong';
+import AuditIcon from '@mui/icons-material/History';
+
 
 export const Patients: React.FC = () => {
   const [patients, setPatients] = useState<any[]>([]);
@@ -451,7 +450,18 @@ export const Patients: React.FC = () => {
                   required
                   fullWidth
                   value={formData.phone}
-                  onChange={(e) => setFormData((prev) => ({ ...prev, phone: e.target.value }))}
+                  onChange={(e) => {
+                    const value = e.target.value.replace(/\D/g, ''); // keep only digits
+                    if (value.length <= 10) {
+                      setFormData((prev) => ({ ...prev, phone: value }));
+                    }
+                  }}
+                  slotProps={{
+                    htmlInput: {
+                      pattern: '[0-9]{10}',
+                      title: 'Phone number must be exactly 10 digits',
+                    },
+                  }}
                 />
               </Grid>
               <Grid size={{ xs: 12, sm: 6 }}>
@@ -472,7 +482,6 @@ export const Patients: React.FC = () => {
               <Grid size={12}>
                 <TextField
                   label="Street Address"
-                  required
                   fullWidth
                   value={formData.address.street}
                   onChange={(e) => handleNestedAddressChange('street', e.target.value)}
@@ -481,7 +490,6 @@ export const Patients: React.FC = () => {
               <Grid size={{ xs: 12, sm: 6 }}>
                 <TextField
                   label="City"
-                  required
                   fullWidth
                   value={formData.address.city}
                   onChange={(e) => handleNestedAddressChange('city', e.target.value)}
@@ -490,7 +498,6 @@ export const Patients: React.FC = () => {
               <Grid size={{ xs: 12, sm: 6 }}>
                 <TextField
                   label="State / Province"
-                  required
                   fullWidth
                   value={formData.address.state}
                   onChange={(e) => handleNestedAddressChange('state', e.target.value)}
@@ -499,7 +506,6 @@ export const Patients: React.FC = () => {
               <Grid size={{ xs: 12, sm: 6 }}>
                 <TextField
                   label="Zip / Postal Code"
-                  required
                   fullWidth
                   value={formData.address.zip_code}
                   onChange={(e) => handleNestedAddressChange('zip_code', e.target.value)}
@@ -508,7 +514,6 @@ export const Patients: React.FC = () => {
               <Grid size={{ xs: 12, sm: 6 }}>
                 <TextField
                   label="Country"
-                  required
                   fullWidth
                   value={formData.address.country}
                   onChange={(e) => handleNestedAddressChange('country', e.target.value)}

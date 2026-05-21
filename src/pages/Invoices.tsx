@@ -30,14 +30,13 @@ import {
   Alert,
   Divider,
 } from '@mui/material';
-import {
-  Add as AddIcon,
-  Payment as PaymentIcon,
-  Delete as DeleteIcon,
-  Close as CloseIcon,
-  RemoveCircleOutlineOutlined as RemoveIcon,
-  Print as PrintIcon,
-} from '@mui/icons-material';
+import AddIcon from '@mui/icons-material/Add';
+import PaymentIcon from '@mui/icons-material/Payment';
+import DeleteIcon from '@mui/icons-material/Delete';
+import CloseIcon from '@mui/icons-material/Close';
+import RemoveIcon from '@mui/icons-material/RemoveCircleOutlineOutlined';
+import PrintIcon from '@mui/icons-material/Print';
+
 
 export const Invoices: React.FC = () => {
   const { user } = useAuth();
