@@ -211,9 +211,9 @@ export const Patients: React.FC = () => {
     try {
       // Fetch sub-histories
       const [encountersRes, prescriptionsRes, invoicesRes, auditRes] = await Promise.all([
-        api.get('/encounters'),
-        api.get('/prescriptions'),
-        api.get('/invoices'),
+        api.get('/encounters').catch(() => ({ data: { data: [] } })),
+        api.get('/prescriptions').catch(() => ({ data: { data: [] } })),
+        api.get('/invoices').catch(() => ({ data: { data: [] } })),
         api.get(`/audit/entity/Patient/${patient.id}`).catch(() => ({ data: { data: [] } })), // Optional helper
       ]);
 
@@ -693,8 +693,8 @@ export const Patients: React.FC = () => {
                               {invoices.map((inv) => (
                                 <TableRow key={inv.id}>
                                   <TableCell>{new Date(inv.created_at).toLocaleDateString()}</TableCell>
-                                  <TableCell>{new Date(inv.dueDate).toLocaleDateString()}</TableCell>
-                                  <TableCell>${inv.totalAmount.toLocaleString()}</TableCell>
+                                  <TableCell>{inv.due_date ? new Date(inv.due_date).toLocaleDateString() : 'N/A'}</TableCell>
+                                  <TableCell>${(inv.total_amount ?? 0).toLocaleString()}</TableCell>
                                   <TableCell>
                                     <Chip
                                       label={inv.status.toUpperCase()}
