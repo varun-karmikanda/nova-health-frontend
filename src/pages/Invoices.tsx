@@ -29,6 +29,7 @@ import {
   CircularProgress,
   Alert,
   Divider,
+  Autocomplete,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import PaymentIcon from '@mui/icons-material/Payment';
@@ -36,7 +37,7 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import CloseIcon from '@mui/icons-material/Close';
 import RemoveIcon from '@mui/icons-material/RemoveCircleOutlineOutlined';
 import PrintIcon from '@mui/icons-material/Print';
-
+import EditIcon from '@mui/icons-material/Edit';
 
 export const Invoices: React.FC = () => {
   const { user } = useAuth();
@@ -49,6 +50,7 @@ export const Invoices: React.FC = () => {
   const [createOpen, setCreateOpen] = useState(false);
   const [paymentOpen, setPaymentOpen] = useState(false);
   const [selectedInvoice, setSelectedInvoice] = useState<any>(null);
+  const [selectedInvoiceForEdit, setSelectedInvoiceForEdit] = useState<any>(null);
 
   const [patientId, setPatientId] = useState('');
   const [appointmentId, setAppointmentId] = useState('');
@@ -112,22 +114,36 @@ export const Invoices: React.FC = () => {
 
   const openCreateModal = () => {
     setErrorMsg(''); setSuccessMsg('');
-    setPatientId(patients[0]?.id || '');
-    setAppointmentId(appointments[0]?.id || '');
+    setSelectedInvoiceForEdit(null);
+    setPatientId('');
+    setAppointmentId('');
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
     setDueDate(tomorrow.toISOString().split('T')[0]);
     setTaxAmount(0); setPaidAmount(0);
-    setItems([{ description: 'General Consultation Fee', amount: 50 }]);
+    setItems([{ description: 'General Consultation Fee', amount: 500 }]);
     setCreateOpen(true);
   };
 
-  const handleCreateSubmit = async (e: React.FormEvent) => {
+  const openEditModal = (inv: any) => {
+    setErrorMsg(''); setSuccessMsg('');
+    setSelectedInvoiceForEdit(inv);
+    setPatientId(inv.patient_id);
+    setAppointmentId(inv.appointment_id);
+    setDueDate(inv.due_date ? inv.due_date.split('T')[0] : '');
+    setTaxAmount(inv.tax_amount || 0);
+    setPaidAmount(inv.paid_amount || 0);
+    setItems(inv.items || [{ description: '', amount: 0 }]);
+    setCreateOpen(true);
+  };
+
+  const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg('');
     const finalTotal = calculateTotal();
     try {
-      const response = await api.post('/invoices', {
+      let response;
+      const payload = {
         patient_id: patientId,
         appointment_id: appointmentId,
         total_amount: finalTotal,
@@ -135,14 +151,24 @@ export const Invoices: React.FC = () => {
         paid_amount: Number(paidAmount),
         due_date: new Date(dueDate).toISOString(),
         items: items.map((item) => ({ description: item.description, amount: Number(item.amount) })),
-      });
+      };
+
+      if (selectedInvoiceForEdit) {
+        response = await api.patch(`/invoices/${selectedInvoiceForEdit.id}`, payload);
+      } else {
+        response = await api.post('/invoices', payload);
+      }
+
       if (response.data?.success) {
-        setSuccessMsg('Invoice generated successfully!');
+        setSuccessMsg(selectedInvoiceForEdit ? 'Invoice updated successfully!' : 'Invoice generated successfully!');
         loadData();
-        setTimeout(() => setCreateOpen(false), 1200);
+        setTimeout(() => {
+          setCreateOpen(false);
+          setSelectedInvoiceForEdit(null);
+        }, 1200);
       }
     } catch (err: any) {
-      setErrorMsg(err.response?.data?.error?.message || 'Failed to generate invoice.');
+      setErrorMsg(err.response?.data?.error?.message || 'Failed to save invoice.');
     }
   };
 
@@ -179,19 +205,12 @@ export const Invoices: React.FC = () => {
     }
   };
 
-  const getStatusColor = (status: string): any => {
-    switch (status) {
-      case 'draft': return 'default';
-      case 'issued': return 'primary';
-      case 'partially_paid': return 'warning';
-      case 'paid': return 'success';
-      case 'overdue': return 'error';
-      case 'cancelled': return 'secondary';
-      default: return 'default';
-    }
-  };
-
-  const filteredInvoices = invoices.filter((inv) => statusFilter === 'all' || inv.status === statusFilter);
+  const filteredInvoices = invoices.filter((inv) => {
+    if (statusFilter === 'all') return true;
+    if (statusFilter === 'paid') return inv.status === 'paid';
+    if (statusFilter === 'unpaid') return inv.status !== 'paid';
+    return true;
+  });
 
   return (
     <Box>
@@ -214,12 +233,8 @@ export const Invoices: React.FC = () => {
       <Paper sx={{ border: '1px solid', borderColor: 'divider', mb: 3 }}>
         <Tabs value={statusFilter} onChange={handleStatusTabChange} indicatorColor="primary" textColor="primary" variant="scrollable" scrollButtons="auto">
           <Tab value="all" label="All Invoices" />
-          <Tab value="draft" label="Draft" />
-          <Tab value="issued" label="Issued" />
-          <Tab value="partially_paid" label="Partially Paid" />
           <Tab value="paid" label="Paid" />
-          <Tab value="overdue" label="Overdue" />
-          <Tab value="cancelled" label="Cancelled" />
+          <Tab value="unpaid" label="Not Paid" />
         </Tabs>
       </Paper>
 
@@ -235,7 +250,6 @@ export const Invoices: React.FC = () => {
                 <TableCell>Scheduled Visit</TableCell>
                 <TableCell>Total Bill</TableCell>
                 <TableCell>Paid Amount</TableCell>
-                <TableCell>Due Date</TableCell>
                 <TableCell>Status</TableCell>
                 <TableCell align="right">Actions</TableCell>
               </TableRow>
@@ -243,7 +257,7 @@ export const Invoices: React.FC = () => {
             <TableBody>
               {filteredInvoices.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={8} align="center" sx={{ py: 6 }}>
+                  <TableCell colSpan={7} align="center" sx={{ py: 6 }}>
                     <Typography color="text.secondary">No invoices matching the selected status.</Typography>
                   </TableCell>
                 </TableRow>
@@ -257,11 +271,19 @@ export const Invoices: React.FC = () => {
                     <TableCell sx={{ color: inv.paid_amount >= inv.total_amount ? 'success.main' : 'text.secondary' }}>
                       ${inv.paid_amount.toFixed(2)}
                     </TableCell>
-                    <TableCell>{new Date(inv.due_date).toLocaleDateString()}</TableCell>
                     <TableCell>
-                      <Chip label={inv.status.replace('_', ' ').toUpperCase()} size="small" color={getStatusColor(inv.status)} sx={{ fontWeight: 700, fontSize: '0.65rem', height: 18 }} />
+                      {inv.status === 'paid' ? (
+                        <Chip label="PAID" size="small" color="success" sx={{ fontWeight: 700, fontSize: '0.65rem', height: 18 }} />
+                      ) : (
+                        <Chip label="NOT PAID" size="small" color="error" sx={{ fontWeight: 700, fontSize: '0.65rem', height: 18 }} />
+                      )}
                     </TableCell>
                     <TableCell align="right">
+                      {(user?.role === 'admin' || user?.role === 'receptionist') && inv.status !== 'paid' && inv.status !== 'cancelled' && (
+                        <IconButton color="secondary" onClick={() => openEditModal(inv)} title="Edit Invoice">
+                          <EditIcon fontSize="small" />
+                        </IconButton>
+                      )}
                       {(user?.role === 'admin' || user?.role === 'receptionist') && inv.status !== 'paid' && (
                         <IconButton color="primary" onClick={() => openPaymentModal(inv)} title="Record Payment">
                           <PaymentIcon fontSize="small" />
@@ -284,45 +306,67 @@ export const Invoices: React.FC = () => {
         </TableContainer>
       )}
 
-      {/* CREATE INVOICE DIALOG */}
+      {/* CREATE / EDIT INVOICE DIALOG */}
       <Dialog open={createOpen} onClose={() => setCreateOpen(false)} maxWidth="md" fullWidth>
         <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Typography variant="h6" sx={{ fontWeight: 700 }}>Generate New Billing Invoice</Typography>
+          <Typography variant="h6" sx={{ fontWeight: 700 }}>
+            {selectedInvoiceForEdit ? 'Edit Billing Invoice' : 'Generate New Billing Invoice'}
+          </Typography>
           <IconButton onClick={() => setCreateOpen(false)} size="small"><CloseIcon /></IconButton>
         </DialogTitle>
-        <form onSubmit={handleCreateSubmit}>
+        <form onSubmit={handleFormSubmit}>
           <DialogContent dividers>
             {errorMsg && <Alert severity="error" sx={{ mb: 2 }}>{errorMsg}</Alert>}
             {successMsg && <Alert severity="success" sx={{ mb: 2 }}>{successMsg}</Alert>}
 
             <Grid container spacing={2.5} sx={{ mb: 3 }}>
               <Grid size={{ xs: 12, sm: 6 }}>
-                <FormControl fullWidth required>
-                  <InputLabel id="inv-patient-label">Patient</InputLabel>
-                  <Select labelId="inv-patient-label" label="Patient" value={patientId} onChange={(e) => setPatientId(e.target.value)}>
-                    {patients.map((p) => <MenuItem key={p.id} value={p.id}>{p.first_name} {p.last_name}</MenuItem>)}
+                <Autocomplete
+                  options={patients}
+                  getOptionLabel={(p) => `${p.first_name} ${p.last_name} (${p.phone})`}
+                  value={patients.find((p) => p.id === patientId) || null}
+                  onChange={(_event, newValue) => {
+                    setPatientId(newValue ? newValue.id : '');
+                    setAppointmentId('');
+                  }}
+                  isOptionEqualToValue={(option, value) => option.id === value.id}
+                  renderInput={(params) => (
+                    <TextField
+                      {...params}
+                      label="Patient"
+                      required={!patientId}
+                      placeholder="Search patient by name or phone..."
+                    />
+                  )}
+                />
+              </Grid>
+              <Grid size={{ xs: 12, sm: 6 }}>
+                <FormControl fullWidth required disabled={!patientId}>
+                  <InputLabel id="inv-appt-label">Linked Appointment</InputLabel>
+                  <Select
+                    labelId="inv-appt-label"
+                    label="Linked Appointment"
+                    value={appointmentId}
+                    onChange={(e) => setAppointmentId(e.target.value)}
+                  >
+                    {appointments.filter((a) => a.patient_id === patientId).length === 0 ? (
+                      <MenuItem value="" disabled>No appointments found for this patient</MenuItem>
+                    ) : (
+                      appointments
+                        .filter((a) => a.patient_id === patientId)
+                        .map((a) => (
+                          <MenuItem key={a.id} value={a.id}>
+                            {new Date(a.scheduled_at).toLocaleDateString()} at {new Date(a.scheduled_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} — {a.reason}
+                          </MenuItem>
+                        ))
+                    )}
                   </Select>
                 </FormControl>
               </Grid>
               <Grid size={{ xs: 12, sm: 6 }}>
-                <FormControl fullWidth required>
-                  <InputLabel id="inv-appt-label">Linked Appointment</InputLabel>
-                  <Select labelId="inv-appt-label" label="Linked Appointment" value={appointmentId} onChange={(e) => setAppointmentId(e.target.value)}>
-                    {appointments.filter((a) => a.patient_id === patientId || patientId === '').map((a) => (
-                      <MenuItem key={a.id} value={a.id}>
-                        {getPatientName(a.patient_id)} — {new Date(a.scheduled_at).toLocaleDateString()}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-              </Grid>
-              <Grid size={{ xs: 12, sm: 4 }}>
-                <TextField label="Due Date" type="date" required fullWidth slotProps={{ inputLabel: { shrink: true } }} value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
-              </Grid>
-              <Grid size={{ xs: 12, sm: 4 }}>
                 <TextField label="Tax / Add-ons ($)" type="number" fullWidth value={taxAmount} onChange={(e) => setTaxAmount(Number(e.target.value))} />
               </Grid>
-              <Grid size={{ xs: 12, sm: 4 }}>
+              <Grid size={{ xs: 12, sm: 6 }}>
                 <TextField label="Upfront Paid Amount ($)" type="number" fullWidth value={paidAmount} onChange={(e) => setPaidAmount(Number(e.target.value))} />
               </Grid>
             </Grid>
@@ -358,7 +402,9 @@ export const Invoices: React.FC = () => {
           </DialogContent>
           <DialogActions sx={{ p: 2.5 }}>
             <Button onClick={() => setCreateOpen(false)}>Cancel</Button>
-            <Button type="submit" variant="contained" color="primary">Generate Invoice</Button>
+            <Button type="submit" variant="contained" color="primary">
+              {selectedInvoiceForEdit ? 'Update Invoice' : 'Generate Invoice'}
+            </Button>
           </DialogActions>
         </form>
       </Dialog>

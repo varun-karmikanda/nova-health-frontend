@@ -28,6 +28,7 @@ import {
   Tab,
   CircularProgress,
   Alert,
+  Autocomplete,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
@@ -101,8 +102,8 @@ export const Appointments: React.FC = () => {
   const openBookModal = () => {
     setErrorMsg('');
     setSuccessMsg('');
-    setPatientId(patients[0]?.id || '');
-    setDoctorId(doctors[0]?.id || '');
+    setPatientId('');
+    setDoctorId('');
     // Default scheduled time to tomorrow at 10 AM
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
@@ -269,7 +270,7 @@ export const Appointments: React.FC = () => {
                 filteredAppointments.map((appt) => (
                   <TableRow key={appt.id} hover>
                     <TableCell sx={{ fontWeight: 700, color: 'primary.main' }}>
-                      #{appt.token_number}
+                      {appt.status === 'cancelled' ? '-' : `#${appt.token_number}`}
                     </TableCell>
                     <TableCell sx={{ fontWeight: 600 }}>
                       {getPatientName(appt.patient_id)}
@@ -329,42 +330,45 @@ export const Appointments: React.FC = () => {
           <DialogContent dividers>
             {errorMsg && <Alert severity="error" sx={{ mb: 2 }}>{errorMsg}</Alert>}
             {successMsg && <Alert severity="success" sx={{ mb: 2 }}>{successMsg}</Alert>}
-
             <Grid container spacing={2.5}>
               <Grid size={12}>
-                <FormControl fullWidth required>
-                  <InputLabel id="appt-patient-select">Patient</InputLabel>
-                  <Select
-                    labelId="appt-patient-select"
-                    label="Patient"
-                    value={patientId}
-                    onChange={(e) => setPatientId(e.target.value)}
-                  >
-                    {patients.map((p) => (
-                      <MenuItem key={p.id} value={p.id}>
-                        {p.first_name} {p.last_name} ({p.phone})
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
+                <Autocomplete
+                  options={patients}
+                  getOptionLabel={(p) => `${p.first_name} ${p.last_name} (${p.phone})`}
+                  value={patients.find((p) => p.id === patientId) || null}
+                  onChange={(_event, newValue) => {
+                    setPatientId(newValue ? newValue.id : '');
+                  }}
+                  isOptionEqualToValue={(option, value) => option.id === value.id}
+                  renderInput={(params) => (
+                    <TextField
+                      {...params}
+                      label="Patient"
+                      required={!patientId}
+                      placeholder="Search patient by name or phone..."
+                    />
+                  )}
+                />
               </Grid>
 
               <Grid size={12}>
-                <FormControl fullWidth required>
-                  <InputLabel id="appt-doctor-select">Assigned Doctor</InputLabel>
-                  <Select
-                    labelId="appt-doctor-select"
-                    label="Assigned Doctor"
-                    value={doctorId}
-                    onChange={(e) => setDoctorId(e.target.value)}
-                  >
-                    {doctors.map((d) => (
-                      <MenuItem key={d.id} value={d.id}>
-                        Dr. {d.first_name} {d.last_name}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
+                <Autocomplete
+                  options={doctors}
+                  getOptionLabel={(d) => `Dr. ${d.first_name} ${d.last_name} (${d.email})`}
+                  value={doctors.find((d) => d.id === doctorId) || null}
+                  onChange={(_event, newValue) => {
+                    setDoctorId(newValue ? newValue.id : '');
+                  }}
+                  isOptionEqualToValue={(option, value) => option.id === value.id}
+                  renderInput={(params) => (
+                    <TextField
+                      {...params}
+                      label="Assigned Doctor"
+                      required={!doctorId}
+                      placeholder="Search doctor by name or email..."
+                    />
+                  )}
+                />
               </Grid>
 
               <Grid size={12}>

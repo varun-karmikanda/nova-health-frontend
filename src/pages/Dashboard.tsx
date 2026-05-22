@@ -188,13 +188,34 @@ export const Dashboard: React.FC = () => {
       <Grid container spacing={3} sx={{ mb: 4 }}>
         <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <Card>
-            <CardContent sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-              <Avatar sx={{ bgcolor: 'rgba(0, 191, 165, 0.12)', color: 'primary.main', width: 56, height: 56 }}>
-                <PatientsIcon sx={{ fontSize: 32 }} />
+            <CardContent
+              sx={{
+                display: 'flex',
+                flexDirection: { xs: 'column', sm: 'row' },
+                alignItems: 'center',
+                textAlign: { xs: 'center', sm: 'left' },
+                gap: { xs: 1.5, sm: 2 },
+                p: { xs: 2, sm: 2.5 },
+                '&:last-child': { pb: { xs: 2, sm: 2.5 } },
+              }}
+            >
+              <Avatar
+                sx={{
+                  bgcolor: 'rgba(0, 191, 165, 0.12)',
+                  color: 'primary.main',
+                  width: { xs: 48, sm: 56 },
+                  height: { xs: 48, sm: 56 },
+                }}
+              >
+                <PatientsIcon sx={{ fontSize: { xs: 24, sm: 32 } }} />
               </Avatar>
               <Box>
-                <Typography variant="subtitle2" color="text.secondary">Total Patients</Typography>
-                <Typography variant="h4" sx={{ fontWeight: 700 }}>{stats.patientsCount}</Typography>
+                <Typography variant="subtitle2" color="text.secondary" sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
+                  Total Patients
+                </Typography>
+                <Typography sx={{ fontWeight: 700, fontSize: { xs: '1.5rem', sm: '1.75rem', md: '2.125rem' }, lineHeight: 1.2 }}>
+                  {stats.patientsCount}
+                </Typography>
               </Box>
             </CardContent>
           </Card>
@@ -202,13 +223,34 @@ export const Dashboard: React.FC = () => {
 
         <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <Card>
-            <CardContent sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-              <Avatar sx={{ bgcolor: 'rgba(255, 179, 0, 0.12)', color: 'secondary.main', width: 56, height: 56 }}>
-                <CalendarIcon sx={{ fontSize: 32 }} />
+            <CardContent
+              sx={{
+                display: 'flex',
+                flexDirection: { xs: 'column', sm: 'row' },
+                alignItems: 'center',
+                textAlign: { xs: 'center', sm: 'left' },
+                gap: { xs: 1.5, sm: 2 },
+                p: { xs: 2, sm: 2.5 },
+                '&:last-child': { pb: { xs: 2, sm: 2.5 } },
+              }}
+            >
+              <Avatar
+                sx={{
+                  bgcolor: 'rgba(255, 179, 0, 0.12)',
+                  color: 'secondary.main',
+                  width: { xs: 48, sm: 56 },
+                  height: { xs: 48, sm: 56 },
+                }}
+              >
+                <CalendarIcon sx={{ fontSize: { xs: 24, sm: 32 } }} />
               </Avatar>
               <Box>
-                <Typography variant="subtitle2" color="text.secondary">Appointments</Typography>
-                <Typography variant="h4" sx={{ fontWeight: 700 }}>{stats.appointmentsCount}</Typography>
+                <Typography variant="subtitle2" color="text.secondary" sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
+                  Appointments
+                </Typography>
+                <Typography sx={{ fontWeight: 700, fontSize: { xs: '1.5rem', sm: '1.75rem', md: '2.125rem' }, lineHeight: 1.2 }}>
+                  {stats.appointmentsCount}
+                </Typography>
               </Box>
             </CardContent>
           </Card>
@@ -216,13 +258,34 @@ export const Dashboard: React.FC = () => {
 
         <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <Card>
-            <CardContent sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-              <Avatar sx={{ bgcolor: 'rgba(245, 124, 0, 0.12)', color: 'secondary.dark', width: 56, height: 56 }}>
-                <RevenueIcon sx={{ fontSize: 32 }} />
+            <CardContent
+              sx={{
+                display: 'flex',
+                flexDirection: { xs: 'column', sm: 'row' },
+                alignItems: 'center',
+                textAlign: { xs: 'center', sm: 'left' },
+                gap: { xs: 1.5, sm: 2 },
+                p: { xs: 2, sm: 2.5 },
+                '&:last-child': { pb: { xs: 2, sm: 2.5 } },
+              }}
+            >
+              <Avatar
+                sx={{
+                  bgcolor: 'rgba(245, 124, 0, 0.12)',
+                  color: 'secondary.dark',
+                  width: { xs: 48, sm: 56 },
+                  height: { xs: 48, sm: 56 },
+                }}
+              >
+                <RevenueIcon sx={{ fontSize: { xs: 24, sm: 32 } }} />
               </Avatar>
               <Box>
-                <Typography variant="subtitle2" color="text.secondary">Revenue</Typography>
-                <Typography variant="h4" sx={{ fontWeight: 700 }}>${stats.totalRevenue.toLocaleString()}</Typography>
+                <Typography variant="subtitle2" color="text.secondary" sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
+                  Revenue
+                </Typography>
+                <Typography sx={{ fontWeight: 700, fontSize: { xs: '1.5rem', sm: '1.75rem', md: '2.125rem' }, lineHeight: 1.2 }}>
+                  ${stats.totalRevenue.toLocaleString()}
+                </Typography>
               </Box>
             </CardContent>
           </Card>
@@ -230,13 +293,34 @@ export const Dashboard: React.FC = () => {
 
         <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <Card>
-            <CardContent sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-              <Avatar sx={{ bgcolor: 'rgba(0, 121, 107, 0.12)', color: 'primary.dark', width: 56, height: 56 }}>
-                <WorkloadIcon sx={{ fontSize: 32 }} />
+            <CardContent
+              sx={{
+                display: 'flex',
+                flexDirection: { xs: 'column', sm: 'row' },
+                alignItems: 'center',
+                textAlign: { xs: 'center', sm: 'left' },
+                gap: { xs: 1.5, sm: 2 },
+                p: { xs: 2, sm: 2.5 },
+                '&:last-child': { pb: { xs: 2, sm: 2.5 } },
+              }}
+            >
+              <Avatar
+                sx={{
+                  bgcolor: 'rgba(0, 121, 107, 0.12)',
+                  color: 'primary.dark',
+                  width: { xs: 48, sm: 56 },
+                  height: { xs: 48, sm: 56 },
+                }}
+              >
+                <WorkloadIcon sx={{ fontSize: { xs: 24, sm: 32 } }} />
               </Avatar>
               <Box>
-                <Typography variant="subtitle2" color="text.secondary">Clinical Encounters</Typography>
-                <Typography variant="h4" sx={{ fontWeight: 700 }}>{stats.encountersCount}</Typography>
+                <Typography variant="subtitle2" color="text.secondary" sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
+                  Clinical Encounters
+                </Typography>
+                <Typography sx={{ fontWeight: 700, fontSize: { xs: '1.5rem', sm: '1.75rem', md: '2.125rem' }, lineHeight: 1.2 }}>
+                  {stats.encountersCount}
+                </Typography>
               </Box>
             </CardContent>
           </Card>
