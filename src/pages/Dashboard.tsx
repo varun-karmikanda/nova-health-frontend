@@ -60,11 +60,11 @@ export const Dashboard: React.FC = () => {
 
       // Fetch lists
       const [patientsRes, apptsRes, invoicesRes, encountersRes, doctorsRes] = await Promise.all([
-        api.get('/patients'),
-        api.get('/appointments'),
-        api.get('/invoices'),
-        api.get('/encounters'),
-        api.get('/auth/doctors'),
+        api.get('/patients').catch(() => ({ data: { data: [] } })),
+        api.get('/appointments').catch(() => ({ data: { data: [] } })),
+        api.get('/invoices').catch(() => ({ data: { data: [] } })),
+        api.get('/encounters').catch(() => ({ data: { data: [] } })),
+        api.get('/auth/doctors').catch(() => ({ data: { data: [] } })),
       ]);
 
       const patients = patientsRes.data?.data || [];
@@ -113,11 +113,12 @@ export const Dashboard: React.FC = () => {
       // 2. Revenue by month
       const monthlyRevenue = Array.from({ length: 4 }).map((_, i) => {
         const d = new Date();
+        d.setDate(1); // Set date to 1 to avoid month rollover issues (e.g. 31st of month)
         d.setMonth(d.getMonth() - i);
         const label = d.toLocaleDateString('en-US', { month: 'short' });
         const matchString = d.toISOString().substring(0, 7); // e.g. "2026-05"
         const revenue = invoices
-          .filter((inv: any) => inv.created_at.startsWith(matchString) && (inv.status === 'paid' || inv.status === 'partially_paid'))
+          .filter((inv: any) => inv.created_at?.startsWith(matchString) && (inv.status === 'paid' || inv.status === 'partially_paid'))
           .reduce((sum: number, inv: any) => sum + (inv.total_amount || 0), 0);
         return { name: label, Revenue: revenue };
       }).reverse();
@@ -128,9 +129,9 @@ export const Dashboard: React.FC = () => {
       const female = patients.filter((p: any) => p.gender === 'female').length;
       const other = patients.filter((p: any) => p.gender === 'other').length;
       setGenderData([
-        { name: 'Male', value: male || 1 }, // Fallback to 1 for visual representation if 0
-        { name: 'Female', value: female || 1 },
-        { name: 'Other', value: other || 0 },
+        { name: 'Male', value: male },
+        { name: 'Female', value: female },
+        { name: 'Other', value: other },
       ]);
 
     } catch (err) {
@@ -387,7 +388,7 @@ export const Dashboard: React.FC = () => {
                     {entry.name}
                   </Typography>
                   <Typography variant="h6" sx={{ fontWeight: 700 }}>
-                    {entry.value === 1 && entry.name !== 'Male' && entry.name !== 'Female' ? 0 : entry.value}
+                    {entry.value}
                   </Typography>
                 </Box>
               ))}
