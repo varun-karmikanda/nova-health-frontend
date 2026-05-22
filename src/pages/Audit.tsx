@@ -30,6 +30,7 @@ import {
 import ViewIcon from '@mui/icons-material/Visibility';
 import CloseIcon from '@mui/icons-material/Close';
 import ShieldIcon from '@mui/icons-material/AdminPanelSettings';
+import DownloadIcon from '@mui/icons-material/Download';
 
 
 export const Audit: React.FC = () => {
@@ -93,6 +94,7 @@ export const Audit: React.FC = () => {
     const matchesSearch =
       searchQuery === '' ||
       (log.user_id && log.user_id.toLowerCase().includes(searchLower)) ||
+      (log.user_name && log.user_name.toLowerCase().includes(searchLower)) ||
       (log.entity_id && log.entity_id.toLowerCase().includes(searchLower)) ||
       (log.entity_type && log.entity_type.toLowerCase().includes(searchLower)) ||
       (log.source_ip && log.source_ip.toLowerCase().includes(searchLower));
@@ -114,15 +116,74 @@ export const Audit: React.FC = () => {
     );
   }
 
+  const handleExportCSV = () => {
+    try {
+      const headers = ['Timestamp', 'Action', 'Entity Type', 'Entity ID', 'Actor Name', 'Actor User ID', 'IP Address', 'Details'];
+      
+      const rows = filteredLogs.map((log) => {
+        const timestamp = new Date(log.timestamp).toISOString();
+        const action = log.action || '';
+        const entityType = log.entity_type || '';
+        const entityId = log.entity_id || '';
+        const userName = log.user_name || (log.user_id ? '' : 'System');
+        const userId = log.user_id || 'System';
+        const sourceIp = log.source_ip || '127.0.0.1';
+        
+        let detailsStr = '';
+        if (log.snapshot) {
+          detailsStr = JSON.stringify(log.snapshot);
+        } else if (log.changes) {
+          detailsStr = JSON.stringify(log.changes);
+        }
+        
+        return [
+          timestamp,
+          action,
+          entityType,
+          entityId,
+          userName,
+          userId,
+          sourceIp,
+          detailsStr
+        ].map(val => `"${String(val).replace(/"/g, '""')}"`);
+      });
+      
+      const csvContent = [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.setAttribute('href', url);
+      link.setAttribute('download', `clinic_audit_logs_${new Date().toISOString().split('T')[0]}.csv`);
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (err) {
+      console.error('Failed to export audit logs', err);
+    }
+  };
+
   return (
     <Box>
-      <Box sx={{ mb: 4 }}>
-        <Typography variant="h4" sx={{ fontWeight: 800 }} gutterBottom>
-          Clinic Security Audit Trails
-        </Typography>
-        <Typography variant="body1" color="text.secondary">
-          Review absolute records of system interactions, access logins, patient records modifications, and clinic events.
-        </Typography>
+      <Box sx={{ mb: 4, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 2 }}>
+        <Box>
+          <Typography variant="h4" sx={{ fontWeight: 800 }} gutterBottom>
+            Clinic Security Audit Trails
+          </Typography>
+          <Typography variant="body1" color="text.secondary">
+            Review absolute records of system interactions, access logins, patient records modifications, and clinic events.
+          </Typography>
+        </Box>
+        <Button
+          variant="contained"
+          color="primary"
+          startIcon={<DownloadIcon />}
+          onClick={handleExportCSV}
+          disabled={filteredLogs.length === 0}
+          sx={{ height: 42, px: 3, fontWeight: 600, borderRadius: 2 }}
+        >
+          Export Audit Logs
+        </Button>
       </Box>
 
       {errorMsg && <Alert severity="error" sx={{ mb: 3 }}>{errorMsg}</Alert>}
@@ -195,7 +256,7 @@ export const Audit: React.FC = () => {
                 <TableCell>Action</TableCell>
                 <TableCell>Entity Type</TableCell>
                 <TableCell>Entity ID / Reference</TableCell>
-                <TableCell>Actor User ID</TableCell>
+                <TableCell>Actor Name / ID</TableCell>
                 <TableCell>IP Address</TableCell>
                 <TableCell align="right">Inspector</TableCell>
               </TableRow>
@@ -225,8 +286,15 @@ export const Audit: React.FC = () => {
                     <TableCell sx={{ fontFamily: 'monospace', fontSize: '0.8rem' }}>
                       {log.entity_id ? `${log.entity_id.slice(0, 8)}...` : 'N/A'}
                     </TableCell>
-                    <TableCell sx={{ fontFamily: 'monospace', fontSize: '0.8rem' }}>
-                      {log.user_id ? `${log.user_id.slice(0, 8)}...` : 'System'}
+                    <TableCell>
+                      <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                        {log.user_name || (log.user_id ? 'User' : 'System')}
+                      </Typography>
+                      {log.user_id && (
+                        <Typography variant="caption" color="text.secondary" sx={{ fontFamily: 'monospace', fontSize: '0.7rem', display: 'block' }}>
+                          {log.user_id}
+                        </Typography>
+                      )}
                     </TableCell>
                     <TableCell>{log.source_ip || '127.0.0.1'}</TableCell>
                     <TableCell align="right">
@@ -272,8 +340,13 @@ export const Audit: React.FC = () => {
                 </Grid>
                 <Grid size={{ xs: 12, sm: 6 }}>
                   <Typography variant="body2" color="text.secondary">
-                    Actor: <strong>{selectedLog.user_id || 'System Process'}</strong>
+                    Actor: <strong>{selectedLog.user_name || 'System Process'}</strong>
                   </Typography>
+                  {selectedLog.user_id && (
+                    <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+                      Actor ID: <strong style={{ fontFamily: 'monospace', fontSize: '0.8rem' }}>{selectedLog.user_id}</strong>
+                    </Typography>
+                  )}
                   <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
                     Network IP: <strong>{selectedLog.source_ip || 'Local / Loopback'}</strong>
                   </Typography>

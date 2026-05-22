@@ -57,17 +57,12 @@ export const Encounters: React.FC = () => {
   const [treatmentPlan, setTreatmentPlan] = useState('');
   const [notes, setNotes] = useState('');
 
-  // Vitals Fields
-  const [bp, setBp] = useState('120/80');
-  const [hr, setHr] = useState('72');
-  const [temp, setTemp] = useState('98.6');
-  const [weight, setWeight] = useState('70');
-
   // Medication Items Fields
   const [meds, setMeds] = useState<any[]>([
-    { name: '', dosage: '', frequency: '', duration: '', refill_count: 0 },
+    { name: '', frequency: '', duration: '' },
   ]);
 
+  const [formErrors, setFormErrors] = useState<any>({});
   const [errorMsg, setErrorMsg] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
 
@@ -115,13 +110,19 @@ export const Encounters: React.FC = () => {
   };
 
   const addMedRow = () => {
-    setMeds([...meds, { name: '', dosage: '', frequency: '', duration: '', refill_count: 0 }]);
+    setMeds([...meds, { name: '', frequency: '', duration: '' }]);
   };
 
   const removeMedRow = (index: number) => {
     const newMeds = [...meds];
     newMeds.splice(index, 1);
     setMeds(newMeds);
+    // Clear validation errors for the removed row if they exist
+    if (formErrors.meds) {
+      const newMedsErrors = [...formErrors.meds];
+      newMedsErrors.splice(index, 1);
+      setFormErrors((prev: any) => ({ ...prev, meds: newMedsErrors }));
+    }
   };
 
   const handleMedChange = (index: number, field: string, val: string | number) => {
@@ -137,22 +138,66 @@ export const Encounters: React.FC = () => {
     }
     setErrorMsg('');
     setSuccessMsg('');
-    setAppointmentId(appointments[0]?.id || '');
+    setAppointmentId('');
     setSymptoms('');
     setDiagnosesText('');
     setTreatmentPlan('');
     setNotes('');
-    setBp('120/80');
-    setHr('72');
-    setTemp('98.6');
-    setWeight('70');
-    setMeds([{ name: '', dosage: '', frequency: '', duration: '', refill_count: 0 }]);
+    setMeds([{ name: '', frequency: '', duration: '' }]);
+    setFormErrors({});
     setCreateOpen(true);
   };
 
   const handleCreateSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg('');
+    setFormErrors({});
+
+    const errors: any = {};
+    if (!appointmentId) {
+      errors.appointmentId = 'Please select an appointment.';
+    }
+
+    if (!symptoms.trim()) {
+      errors.symptoms = 'Presenting symptoms are required.';
+    }
+
+    // Prescription is required. Enforce at least one medication item and validate all added rows.
+    const medErrors: any[] = [];
+    let hasValidMed = false;
+
+    meds.forEach((m, idx) => {
+      const rowErrors: any = {};
+      const nameEmpty = !m.name.trim();
+      const freqEmpty = !m.frequency.trim();
+      const durEmpty = !m.duration.trim();
+
+      if (nameEmpty || freqEmpty || durEmpty) {
+        if (nameEmpty) rowErrors.name = 'Medication name is required.';
+        if (freqEmpty) rowErrors.frequency = 'Frequency is required.';
+        if (durEmpty) rowErrors.duration = 'Duration is required.';
+      } else {
+        hasValidMed = true;
+      }
+      medErrors[idx] = rowErrors;
+    });
+
+    const hasMedErrors = medErrors.some((err) => Object.keys(err).length > 0);
+    if (hasMedErrors || !hasValidMed) {
+      errors.meds = medErrors;
+      if (!hasValidMed && meds.length > 0 && Object.keys(medErrors[0]).length === 0) {
+        errors.meds[0] = {
+          name: 'Medication name is required.',
+          frequency: 'Frequency is required.',
+          duration: 'Duration is required.',
+        };
+      }
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setFormErrors(errors);
+      return;
+    }
     
     const selectedAppt = appointments.find((a) => a.id === appointmentId);
     if (!selectedAppt) {
@@ -161,7 +206,7 @@ export const Encounters: React.FC = () => {
     }
 
     try {
-      // 1. Create Encounter
+      // 1. Create Encounter (without vitals)
       const encResponse = await api.post('/encounters', {
         appointment_id: appointmentId,
         patient_id: selectedAppt.patient_id,
@@ -171,12 +216,7 @@ export const Encounters: React.FC = () => {
         diagnoses: diagnosesText.split(',').map((d) => d.trim()).filter(Boolean),
         treatment_plan: treatmentPlan,
         notes,
-        vitals: {
-          blood_pressure: bp,
-          heart_rate: hr,
-          temperature: temp,
-          weight: weight,
-        },
+        vitals: null,
       });
 
       if (encResponse.data?.success) {
@@ -185,23 +225,19 @@ export const Encounters: React.FC = () => {
         // 2. Mark Appointment as Completed
         await api.patch(`/appointments/${appointmentId}`, { status: 'completed' });
 
-        // 3. Draft Prescription if meds have values
-        const validMeds = meds.filter((m) => m.name.trim() !== '');
-        if (validMeds.length > 0) {
-          await api.post('/prescriptions', {
-            encounter_id: encounter.id,
-            patient_id: selectedAppt.patient_id,
-            doctor_id: selectedAppt.doctor_id,
-            medication_items: validMeds.map((m) => ({
-              name: m.name,
-              dosage: m.dosage,
-              frequency: m.frequency,
-              duration: m.duration,
-            })),
-            instructions: notes,
-            refill_count: Number(validMeds[0].refill_count) || 0,
-          });
-        }
+        // 3. Draft Prescription (already validated as not empty)
+        await api.post('/prescriptions', {
+          encounter_id: encounter.id,
+          patient_id: selectedAppt.patient_id,
+          doctor_id: selectedAppt.doctor_id,
+          medication_items: meds.map((m) => ({
+            name: m.name.trim(),
+            frequency: m.frequency.trim(),
+            duration: m.duration.trim(),
+          })),
+          instructions: notes,
+          refill_count: 0,
+        });
 
         setSuccessMsg('Clinical encounter recorded & appointment status updated!');
         loadData();
@@ -372,13 +408,18 @@ export const Encounters: React.FC = () => {
             </Typography>
             <Grid container spacing={2.5} sx={{ mb: 4 }}>
               <Grid size={12}>
-                <FormControl fullWidth required>
+                <FormControl fullWidth error={!!formErrors.appointmentId}>
                   <InputLabel id="enc-appt-select">Select Appointment</InputLabel>
                   <Select
                     labelId="enc-appt-select"
                     label="Select Appointment"
                     value={appointmentId}
-                    onChange={(e) => setAppointmentId(e.target.value)}
+                    onChange={(e) => {
+                      setAppointmentId(e.target.value);
+                      if (formErrors.appointmentId) {
+                        setFormErrors((prev: any) => ({ ...prev, appointmentId: undefined }));
+                      }
+                    }}
                   >
                     {appointments
                       .filter((a) => a.status === 'arrived' || a.status === 'confirmed' || a.status === 'pending')
@@ -388,18 +429,29 @@ export const Encounters: React.FC = () => {
                         </MenuItem>
                       ))}
                   </Select>
+                  {formErrors.appointmentId && (
+                    <Typography variant="caption" color="error" sx={{ mt: 0.5, ml: 1.5 }}>
+                      {formErrors.appointmentId}
+                    </Typography>
+                  )}
                 </FormControl>
               </Grid>
 
               <Grid size={{ xs: 12, sm: 6 }}>
                 <TextField
                   label="Presenting Symptoms"
-                  required
                   multiline
                   rows={2}
                   fullWidth
                   value={symptoms}
-                  onChange={(e) => setSymptoms(e.target.value)}
+                  onChange={(e) => {
+                    setSymptoms(e.target.value);
+                    if (formErrors.symptoms) {
+                      setFormErrors((prev: any) => ({ ...prev, symptoms: undefined }));
+                    }
+                  }}
+                  error={!!formErrors.symptoms}
+                  helperText={formErrors.symptoms}
                 />
               </Grid>
 
@@ -416,49 +468,6 @@ export const Encounters: React.FC = () => {
               </Grid>
             </Grid>
 
-            {/* Vitals Form Section */}
-            <Typography variant="subtitle2" color="primary" sx={{ fontWeight: 600, mb: 2 }}>
-              Patient Vital Signs
-            </Typography>
-            <Grid container spacing={2.5} sx={{ mb: 4 }}>
-              <Grid size={{ xs: 12, sm: 3 }}>
-                <TextField
-                  label="Blood Pressure (mmHg)"
-                  required
-                  fullWidth
-                  value={bp}
-                  onChange={(e) => setBp(e.target.value)}
-                />
-              </Grid>
-              <Grid size={{ xs: 12, sm: 3 }}>
-                <TextField
-                  label="Heart Rate (bpm)"
-                  required
-                  fullWidth
-                  value={hr}
-                  onChange={(e) => setHr(e.target.value)}
-                />
-              </Grid>
-              <Grid size={{ xs: 12, sm: 3 }}>
-                <TextField
-                  label="Temperature (°F)"
-                  required
-                  fullWidth
-                  value={temp}
-                  onChange={(e) => setTemp(e.target.value)}
-                />
-              </Grid>
-              <Grid size={{ xs: 12, sm: 3 }}>
-                <TextField
-                  label="Weight (kg)"
-                  required
-                  fullWidth
-                  value={weight}
-                  onChange={(e) => setWeight(e.target.value)}
-                />
-              </Grid>
-            </Grid>
-
             {/* Prescription Form Section */}
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
               <Typography variant="subtitle2" color="primary" sx={{ fontWeight: 600 }}>
@@ -469,66 +478,82 @@ export const Encounters: React.FC = () => {
               </Button>
             </Box>
 
-            {meds.map((med, index) => (
-              <Grid container spacing={1.5} key={index} sx={{ mb: 1.5, alignItems: 'center' }}>
-                <Grid size={{ xs: 12, sm: 3 }}>
-                  <TextField
-                    size="small"
-                    label="Medication Name"
-                    fullWidth
-                    value={med.name}
-                    onChange={(e) => handleMedChange(index, 'name', e.target.value)}
-                  />
+            {meds.map((med, index) => {
+              const medError = formErrors.meds?.[index] || {};
+              return (
+                <Grid container spacing={1.5} key={index} sx={{ mb: 1.5, alignItems: 'center' }}>
+                  <Grid size={{ xs: 12, sm: 4 }}>
+                    <TextField
+                      size="small"
+                      label="Medication Name"
+                      fullWidth
+                      value={med.name}
+                      onChange={(e) => {
+                        handleMedChange(index, 'name', e.target.value);
+                        if (formErrors.meds?.[index]?.name) {
+                          const newMedsErrors = [...(formErrors.meds || [])];
+                          if (newMedsErrors[index]) {
+                            delete newMedsErrors[index].name;
+                          }
+                          setFormErrors((prev: any) => ({ ...prev, meds: newMedsErrors }));
+                        }
+                      }}
+                      error={!!medError.name}
+                      helperText={medError.name}
+                    />
+                  </Grid>
+                  <Grid size={{ xs: 12, sm: 4 }}>
+                    <TextField
+                      size="small"
+                      label="Frequency"
+                      placeholder="e.g. Twice Daily"
+                      fullWidth
+                      value={med.frequency}
+                      onChange={(e) => {
+                        handleMedChange(index, 'frequency', e.target.value);
+                        if (formErrors.meds?.[index]?.frequency) {
+                          const newMedsErrors = [...(formErrors.meds || [])];
+                          if (newMedsErrors[index]) {
+                            delete newMedsErrors[index].frequency;
+                          }
+                          setFormErrors((prev: any) => ({ ...prev, meds: newMedsErrors }));
+                        }
+                      }}
+                      error={!!medError.frequency}
+                      helperText={medError.frequency}
+                    />
+                  </Grid>
+                  <Grid size={{ xs: 12, sm: 3.5 }}>
+                    <TextField
+                      size="small"
+                      label="Duration"
+                      placeholder="e.g. 5 Days"
+                      fullWidth
+                      value={med.duration}
+                      onChange={(e) => {
+                        handleMedChange(index, 'duration', e.target.value);
+                        if (formErrors.meds?.[index]?.duration) {
+                          const newMedsErrors = [...(formErrors.meds || [])];
+                          if (newMedsErrors[index]) {
+                            delete newMedsErrors[index].duration;
+                          }
+                          setFormErrors((prev: any) => ({ ...prev, meds: newMedsErrors }));
+                        }
+                      }}
+                      error={!!medError.duration}
+                      helperText={medError.duration}
+                    />
+                  </Grid>
+                  <Grid size={{ xs: 12, sm: 0.5 }}>
+                    {meds.length > 1 && (
+                      <IconButton color="error" onClick={() => removeMedRow(index)}>
+                        <RemoveIcon />
+                      </IconButton>
+                    )}
+                  </Grid>
                 </Grid>
-                <Grid size={{ xs: 12, sm: 2 }}>
-                  <TextField
-                    size="small"
-                    label="Dosage"
-                    placeholder="e.g. 500mg"
-                    fullWidth
-                    value={med.dosage}
-                    onChange={(e) => handleMedChange(index, 'dosage', e.target.value)}
-                  />
-                </Grid>
-                <Grid size={{ xs: 12, sm: 3 }}>
-                  <TextField
-                    size="small"
-                    label="Frequency"
-                    placeholder="e.g. Twice Daily"
-                    fullWidth
-                    value={med.frequency}
-                    onChange={(e) => handleMedChange(index, 'frequency', e.target.value)}
-                  />
-                </Grid>
-                <Grid size={{ xs: 12, sm: 2 }}>
-                  <TextField
-                    size="small"
-                    label="Duration"
-                    placeholder="e.g. 5 Days"
-                    fullWidth
-                    value={med.duration}
-                    onChange={(e) => handleMedChange(index, 'duration', e.target.value)}
-                  />
-                </Grid>
-                <Grid size={{ xs: 12, sm: 1.5 }}>
-                  <TextField
-                    size="small"
-                    label="Refills"
-                    type="number"
-                    fullWidth
-                    value={med.refill_count}
-                    onChange={(e) => handleMedChange(index, 'refill_count', Number(e.target.value))}
-                  />
-                </Grid>
-                <Grid size={{ xs: 12, sm: 0.5 }}>
-                  {meds.length > 1 && (
-                    <IconButton color="error" onClick={() => removeMedRow(index)}>
-                      <RemoveIcon />
-                    </IconButton>
-                  )}
-                </Grid>
-              </Grid>
-            ))}
+              );
+            })}
 
             <Divider sx={{ my: 3 }} />
 
@@ -598,7 +623,7 @@ export const Encounters: React.FC = () => {
                 </Typography>
               </Box>
 
-              {selectedEncounter.vitals && (
+              {selectedEncounter.vitals && Object.values(selectedEncounter.vitals).some(v => v !== null && v !== '') && (
                 <Box sx={{ mb: 2.5, p: 2, bgcolor: 'action.hover', borderRadius: 1.5 }}>
                   <Typography variant="subtitle2" color="primary" sx={{ fontWeight: 600, mb: 1 }}>Patient Vitals</Typography>
                   <Grid container spacing={2}>
@@ -651,7 +676,7 @@ export const Encounters: React.FC = () => {
                       </Box>
                       {rx.medication_items.map((item: any, idx: number) => (
                         <Typography key={idx} variant="body2" sx={{ mt: 0.5 }}>
-                          • <strong>{item.name}</strong> {item.dosage} — {item.frequency} | Duration: {item.duration}
+                          • <strong>{item.name}</strong>{item.dosage ? ` (${item.dosage})` : ''} — {item.frequency} | Duration: {item.duration}
                         </Typography>
                       ))}
                       {rx.instructions && (

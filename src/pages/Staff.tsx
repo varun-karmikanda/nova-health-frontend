@@ -29,6 +29,8 @@ import {
   Alert,
   Button,
   Tooltip,
+  FormControlLabel,
+  Switch,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -40,6 +42,7 @@ export const Staff: React.FC = () => {
   const { user, registerUser } = useAuth();
   const [staff, setStaff] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showDeactivated, setShowDeactivated] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
 
@@ -67,7 +70,7 @@ export const Staff: React.FC = () => {
     try {
       setLoading(true);
       setErrorMsg('');
-      const response = await api.get('/auth/users');
+      const response = await api.get(`/auth/users?include_deactivated=${showDeactivated}`);
       setStaff(response.data?.data || []);
     } catch (err: any) {
       console.error('Failed to load staff list', err);
@@ -84,7 +87,7 @@ export const Staff: React.FC = () => {
       setLoading(false);
       setErrorMsg('Forbidden: You must be an administrator to access the staff directory.');
     }
-  }, [user]);
+  }, [user, showDeactivated]);
 
   const validateForm = () => {
     const tempErrors: Record<string, string> = {};
@@ -266,6 +269,23 @@ export const Staff: React.FC = () => {
       {successMsg && <Alert severity="success" sx={{ mb: 3 }} onClose={() => setSuccessMsg('')}>{successMsg}</Alert>}
       {errorMsg && <Alert severity="error" sx={{ mb: 3 }} onClose={() => setErrorMsg('')}>{errorMsg}</Alert>}
 
+      <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}>
+        <FormControlLabel
+          control={
+            <Switch
+              checked={showDeactivated}
+              onChange={(e) => setShowDeactivated(e.target.checked)}
+              color="error"
+            />
+          }
+          label={
+            <Typography variant="body2" sx={{ fontWeight: 600 }}>
+              Show Deactivated Accounts
+            </Typography>
+          }
+        />
+      </Box>
+
       {/* Staff Table */}
       {loading ? (
         <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
@@ -319,7 +339,15 @@ export const Staff: React.FC = () => {
                     <TableCell>{s.gender}</TableCell>
                     <TableCell>${(s.salary || 0).toLocaleString()}</TableCell>
                     <TableCell align="right">
-                      {s.id !== user.id ? (
+                      {s.is_active === false ? (
+                        <Chip
+                          label="DEACTIVATED"
+                          size="small"
+                          color="error"
+                          variant="outlined"
+                          sx={{ fontWeight: 800, fontSize: '0.65rem', height: 18 }}
+                        />
+                      ) : s.id !== user.id ? (
                         <Tooltip title="Deactivate / Delete Staff Account">
                           <IconButton color="error" onClick={() => handleOpenDelete(s.id)}>
                             <DeleteIcon fontSize="small" />

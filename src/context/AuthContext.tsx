@@ -61,8 +61,9 @@ const AuthProviderInner: React.FC<{ children: React.ReactNode }> = ({ children }
     try {
       const response = await api.post('/auth/login', { email, password });
       if (response.data && response.data.success) {
-        const { accessToken } = response.data.data;
+        const { accessToken, refreshToken } = response.data.data;
         localStorage.setItem('token', accessToken);
+        localStorage.setItem('refreshToken', refreshToken);
 
         // Fetch full profile details (token already stored, interceptor will send it)
         const profileResponse = await api.get('/auth/me');
@@ -82,6 +83,7 @@ const AuthProviderInner: React.FC<{ children: React.ReactNode }> = ({ children }
 
   const doLogout = () => {
     localStorage.removeItem('token');
+    localStorage.removeItem('refreshToken');
     setUser(null);
   };
 
